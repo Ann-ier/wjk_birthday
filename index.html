@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🦀🦀🦀🦀🦀！</title>
+    <script src="./modules/three.js"></script>
+    <script src="./modules/orbitControls.js"></script>
+    <script src="./modules/fontLoader.js"></script>
+    <script src="./modules/TextGeometry.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial Rounded MT Bold', 'Helvetica Rounded', Arial, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #837b7b 0%, #ffffff 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            overflow-x: hidden;
+            background-image: url('./img/wjk.jpg');
+            background-size: cover;
+            background-blend-mode: multiply;
+        }
+        
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 30px;
+            width: 100%;
+            max-width: 1200px;
+        }
+        
+        #cake-container {
+            width: 380px;
+            height: 580px;
+            border-radius: 15px;
+            overflow: hidden;
+            /* box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2); */
+            /* background: #fff8f0; */
+            flex-shrink: 0;
+            
+        }
+        @media (max-width: 900px) {
+            .container {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            #cake-container {
+                width: 380px;
+                height: 580px;
+                margin-top: 120px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="cake-container"></div>
+        
+        <!-- <div class="controls">
+            <div class="control-group">
+                <h2>蛋糕定制</h2>
+                <label for="layers">蛋糕层数: <span id="layers-value">3</span></label>
+                <input type="range" id="layers" min="1" max="5" value="3">
+                
+                <label>蛋糕颜色:</label>
+                <div class="color-picker">
+                    <div class="color-option selected" style="background-color: #FFB6C1;" data-color="#FFB6C1"></div>
+                    <div class="color-option" style="background-color: #87CEFA;" data-color="#87CEFA"></div>
+                    <div class="color-option" style="background-color: #98FB98;" data-color="#98FB98"></div>
+                    <div class="color-option" style="background-color: #FFD700;" data-color="#FFD700"></div>
+                    <div class="color-option" style="background-color: #DDA0DD;" data-color="#DDA0DD"></div>
+                </div>
+                
+                <label>装饰选项:</label>
+                <div class="decorations">
+                    <div class="decoration-option decoration-selected" data-decoration="sprinkles">糖粒</div>
+                    <div class="decoration-option" data-decoration="berries">浆果</div>
+                    <div class="decoration-option" data-decoration="chocolate">巧克力</div>
+                </div>
+                
+                <button id="generate-btn">生成蛋糕</button>
+            </div>
+        </div> -->
+    </div>
+
+    <script>
+        // 初始化Three.js场景
+        let scene, camera, renderer, controls,imageMesh;
+        let cake = null;
+        let uploadedImage = './img/005.png';
+        
+        // 蛋糕配置
+        const cakeConfig = {
+            layers: 3,
+            color: "#87CEFA",
+            decoration: "sprinkles",
+            blessingText: `王俊凯 \n 生日快乐 `,
+            textSize: 0.5,
+            textColor: "#2B8AFF",
+            topDecorations: {
+                count: 6,
+                type: "heart"
+            },
+        };
+        const typeObj=['🍑','🍓','❤️']
+        const typeImg=['heart','star','balloon']
+        // 装饰图片映射
+        const decorationImages = {
+            "heart": "./img/001.png",
+            "star": "./img/002.png",
+            "flower": "./img/003.png",
+            "balloon": "./img/005.png"
+        };
+        // 颜色映射
+        const colorNames = {
+            "#FFB6C1": "粉色",
+            "#87CEFA": "淡蓝",
+            "#98FB98": "淡绿",
+            "#FFD700": "金色",
+            "#DDA0DD": "淡紫"
+        };
+        
+        // 装饰映射
+        const decorationNames = {
+            "sprinkles": "糖粒",
+            "berries": "浆果",
+            "chocolate": "巧克力",
+        };
+        // 纹理缓存
+        const textureCache = {};
+        
+        // 初始化场景
+        function init() {
+            // 创建场景
+            scene = new THREE.Scene();
+            // scene.background = new THREE.Color(0xfff8f0);
+            
+            // 创建相机
+            camera = new THREE.PerspectiveCamera(80, 1, 0.1, 1000);
+            camera.position.z = 10;
+            camera.position.y = 3;
+            camera.position.x = 0;
+            
+            // 创建渲染器
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(380, 600);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            document.getElementById('cake-container').appendChild(renderer.domElement);
+            
+            // 添加轨道控制
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            
+            // 添加灯光
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(5, 10, 7);
+            scene.add(directionalLight);
+            
+            const backLight = new THREE.DirectionalLight(0xffffff, 0.3);
+            backLight.position.set(-5, -5, -5);
+            scene.add(backLight);
+            // 预加载纹理
+            preloadTextures().then(() => {
+                // 创建蛋糕
+                createCake();
+                
+                // 动画循环
+                animate();
+            })
+            
+            // 添加事件监听器
+            // setupEventListeners();
+        }
+        // 预加载纹理
+        function preloadTextures() {
+            const promises = Object.keys(decorationImages).map(key => {
+                return new Promise((resolve, reject) => {
+                    const loader = new THREE.TextureLoader();
+                    loader.load(decorationImages[key], 
+                        (texture) => {
+                            textureCache[key] = texture;
+                            resolve();
+                        },
+                        undefined,
+                        (error) => {
+                            console.error(`Error loading texture for ${key}:`, error);
+                            resolve(); // 即使出错也继续
+                        }
+                    );
+                });
+            });
+            return Promise.all(promises).then(() => {})
+        }
+        // 创建蜡烛
+        function createCandle() {
+            const group = new THREE.Group();
+            
+            // 蜡烛体
+            const bodyGeometry = new THREE.CylinderGeometry(0.12, 0.12, 1.5, 16);
+            const bodyMaterial = new THREE.MeshPhongMaterial({ color: 0x60AFF6 });
+            const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            group.add(body);
+            
+            // 烛芯
+            const wickGeometry = new THREE.CylinderGeometry(0.02, 0.02, 0.6, 8);
+            const wickMaterial = new THREE.MeshPhongMaterial({ color: 0x000000 });
+            const wick = new THREE.Mesh(wickGeometry, wickMaterial);
+            wick.position.y = 0.55;
+            group.add(wick);
+            
+            // 火焰
+            const flameGeometry = new THREE.ConeGeometry(0.08, 0.15, 10);
+            const flameMaterial = new THREE.MeshPhongMaterial({ 
+                color: 0xff9900,
+                emissive: 0xff5500,
+                emissiveIntensity: 0.8
+            });
+            const flame = new THREE.Mesh(flameGeometry, flameMaterial);
+            flame.position.y = 0.90;
+            group.add(flame);
+            
+            return group;
+        }
+        // 创建3D文字
+        function create3DText(font) {
+            // 创建文字几何体
+            const textGeometry = new THREE.TextGeometry(cakeConfig.blessingText, {
+                font: font,
+                size: 0.8,
+                height: 0.2, //字体厚度
+                curveSegments: 12,
+                bevelEnabled: true,
+                bevelThickness: 0.05,
+                bevelSize: 0.05,
+                bevelOffset: 0,
+                bevelSegments: 5
+            });
+            
+            // 居中文字几何体
+            textGeometry.computeBoundingBox();
+            const centerOffset = -0.5 * (textGeometry.boundingBox.max.x - textGeometry.boundingBox.min.x);
+            
+            // 创建文字材质
+            const textMaterial = new THREE.MeshPhongMaterial({
+                color: cakeConfig.textColor,
+                shininess: 100
+            });
+            
+            // 创建文字网格
+            textMesh = new THREE.Mesh(textGeometry, textMaterial);
+            textMesh.position.set(centerOffset, cakeConfig.layers * 0.3 + 0.1, 0);
+            textMesh.rotation.x = -Math.PI / 2; // 平放在蛋糕顶部
+            
+            // 添加文字到场景
+            scene.add(textMesh);
+        }
+        // 创建图片
+        function createImage(img,w,x,rx,y,z,ry) {
+           uploadedImage=img
+            // 创建纹理加载器
+            const loader = new THREE.TextureLoader();
+            loader.load(uploadedImage, function(texture) {
+                // 计算图片比例
+                const aspectRatio = texture.image.width / texture.image.height;
+                const width = w;
+                const height = width / aspectRatio;
+                
+                // 创建平面几何体
+                const imageGeometry = new THREE.PlaneGeometry(width, height);
+                const imageMaterial = new THREE.MeshPhongMaterial({
+                    map: texture,
+                    transparent: true,
+                    side: THREE.DoubleSide
+                });
+                
+                imageMesh = new THREE.Mesh(imageGeometry, imageMaterial);
+                
+                // 将图片放置在蛋糕顶部中央
+                imageMesh.position.y = y;
+                imageMesh.position.x = x;
+                imageMesh.position.z = z;
+                imageMesh.rotation.x = rx==0?0: -Math.PI / rx; // 平放在蛋糕顶部
+                imageMesh.rotation.y = ry==0?0:-Math.PI /ry; // 平放在蛋糕顶部
+                
+                scene.add(imageMesh);
+            });
+        }
+        // 创建顶部装饰
+        function createTopDecoration(type, angle, layerRadius, layerY, layerHeight) {
+            // 使用预加载的纹理
+            const texture = textureCache[type];
+            if (!texture) {
+                console.error(`Texture for ${type} not found`);
+                return new THREE.Group(); // 返回空组作为降级处理
+            }
+            
+            // 创建平面几何体
+            const decorationGeometry = new THREE.PlaneGeometry(0.5, 0.5);
+            const decorationMaterial = new THREE.MeshPhongMaterial({
+                map: texture,
+                transparent: true,
+                side: THREE.DoubleSide
+            });
+            
+            const decorationMesh = new THREE.Mesh(decorationGeometry, decorationMaterial);
+            
+            // 将装饰放置在蛋糕顶部边缘
+            decorationMesh.position.set(
+                Math.cos(angle) * (layerRadius - 0.2-(type=='balloon'?0.3:0)),
+                layerY + layerHeight/2 + 0.13,
+                Math.sin(angle) * (layerRadius - 0.2)
+            );
+            
+            // 稍微倾斜装饰使其更自然
+            decorationMesh.rotation.x = -Math.PI / 2;
+            // decorationMesh.rotation.y = -angle;
+            
+            return decorationMesh;
+        }
+        // 创建蛋糕
+        function createCake() {
+            // 移除旧的蛋糕
+            if (cake) {
+                scene.remove(cake);
+            }
+            
+            cake = new THREE.Group();
+            
+            // 创建蛋糕层
+            const layerHeight = 0.9;
+            const radius = 5;
+            
+            for (let i = 0; i < cakeConfig.layers; i++) {
+                // 每层逐渐变小
+                const layerRadius = radius * (1 - i * 0.1);
+                const layerY = i * layerHeight - (cakeConfig.layers * layerHeight) / 2;
+                
+                // 创建圆柱体几何体
+                const geometry = new THREE.CylinderGeometry(layerRadius, layerRadius, layerHeight, 32);
+                const material = new THREE.MeshPhongMaterial({ 
+                    color: new THREE.Color(cakeConfig.color),
+                    shininess: 30
+                });
+                
+                const layer = new THREE.Mesh(geometry, material);
+                layer.position.y = layerY;
+                
+                // 添加糖霜顶部
+                if (i === cakeConfig.layers - 1) {
+                    const frostingGeometry = new THREE.CylinderGeometry(layerRadius + 0.1, layerRadius + 0.1, 0.1, 32);
+                    const frostingMaterial = new THREE.MeshPhongMaterial({ color: 0xF0DCE3 });
+                    const frosting = new THREE.Mesh(frostingGeometry, frostingMaterial);
+                    frosting.position.y = layerY + layerHeight / 2 + 0.05;
+                    cake.add(frosting);
+                }else{
+                    const frostingGeometry1 = new THREE.CylinderGeometry(layerRadius + 0.1, layerRadius + 0.1, 0.1, 32);
+                    const frostingMaterial1 = new THREE.MeshPhongMaterial({ color: 0xF0DCE3 });
+                    const frosting1 = new THREE.Mesh(frostingGeometry1, frostingMaterial1);
+                    frosting1.position.y = layerY + layerHeight / 2 + 0.05;
+                    cake.add(frosting1);
+                }
+                
+                const frostingGeometry = new THREE.CylinderGeometry(layerRadius + 0.1, layerRadius + 0.1, 0.1, 32);
+                const frostingMaterial = new THREE.MeshPhongMaterial({ color: 0xF4C4D8 });
+                const frosting = new THREE.Mesh(frostingGeometry, frostingMaterial);
+                frosting.position.y = layerY + layerHeight / 50 + 0.05;
+                cake.add(frosting);
+                
+                cake.add(layer);
+
+                for (let j = 0; j < 20; j++) {
+                    const angle = (j / 20) * Math.PI * 2;
+                    const decoration = createImageDecoration(typeObj[i], angle, layerRadius, layerY);
+                    cake.add(decoration);
+                }
+                // 在蛋糕顶部添加装饰
+                if (i !== cakeConfig.layers - 10) {
+                    for (let j = 0; j < 20; j++) {
+                        const angle = (j / 20) * Math.PI * 2;
+                        const typeIndex=typeImg[i]
+                        console.log('=typeImg[i]',typeIndex)
+                        const decoration = createTopDecoration(typeIndex, angle, layerRadius, layerY, layerHeight);
+                        cake.add(decoration);
+                    }
+                }
+            }
+             // 添加装饰
+            // addDecorations(cake, 6);
+            //添加蜡烛
+            for (let i = 0; i < 5; i++) {
+                const candle = createCandle();
+                const angle = (i / 5) * Math.PI * 2;
+                const candleRadius = 5 * 0.55;
+                
+                candle.position.set(
+                    Math.cos(angle) * candleRadius,
+                    (cakeConfig.layers * layerHeight) / 4 + 0.5,
+                    Math.sin(angle) * candleRadius
+                );
+                
+                cake.add(candle);
+            }
+            // // 添加祝福文字
+            // if (cakeConfig.blessingText && cakeConfig.blessingText.trim() !== "") {
+            //     const blessingText = createBlessingText();
+            //     cake.add(blessingText);
+            // }
+            // 加载字体并创建3D文字
+            const loader = new THREE.FontLoader();
+            loader.load('./font/KaiTi_Regular.json', function(font) {
+                create3DText(font);
+            });
+            // ./img,w,x,rx,z
+            createImage('./img/005.png',1.5,1.5,3.5,1.3,-0.3,0);
+            // createImage('./img/004.png',0,1.5,2,1.05,3,0);
+            // createImage('./img/003.png',1,-1.5,2,1.05,3,0);
+            // createImage('./img/002.png',1,-2.8,2,1.05,-1,0);
+            // createImage('./img/001.png',1,2.1,2,1.05,-2.5,0);
+            createImage('./img/005.png',1,-0.6,2,1.05,1.8,0);
+            createImage('./img/003.png',2,0.9,2,1.05,1.8,0);
+            createImage('./img/005.png',1,-0.3,2,1.05,-1.8,0);
+            // createImage('./img/005.png',0.5,0.6,8,1.3,-3.5,0);
+            
+            scene.add(cake);
+            
+            // 更新蛋糕描述
+            // updateCakeDescription();
+        }
+        // 创建图片装饰
+        function createImageDecoration(type, angle, layerRadius, layerY) {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            const size = 128;
+            
+            // 设置canvas大小
+            canvas.width = size;
+            canvas.height = size;
+            
+            // 清除canvas
+            context.fillStyle = 'transparent';
+            context.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // 绘制装饰图案
+            context.font = 'bold 80px Arial';
+            context.fillStyle = '#FFD700'; // 金色装饰
+            context.textAlign = 'center';
+            context.textBaseline = 'middle';
+            context.fillText(type, canvas.width / 2, canvas.height / 2);
+            
+            // 创建纹理
+            const texture = new THREE.CanvasTexture(canvas);
+            
+            // 创建平面几何体
+            const decorationGeometry = new THREE.PlaneGeometry(0.6, 0.6);
+            const decorationMaterial = new THREE.MeshPhongMaterial({
+                map: texture,
+                transparent: true,
+                side: THREE.DoubleSide
+            });
+            
+            const decorationMesh = new THREE.Mesh(decorationGeometry, decorationMaterial);
+            
+            // 将装饰放置在蛋糕侧面
+            decorationMesh.position.set(
+                Math.cos(angle) * (layerRadius + 0.1),
+                layerY,
+                Math.sin(angle) * (layerRadius + 0.1)
+            );
+            
+            decorationMesh.rotation.y =-angle/5
+            // decorationMesh.rotation.x = -Math.PI/3;
+            
+            return decorationMesh;
+        }
+        // 添加装饰
+        function addDecorations(cake, radius) {
+            const decorationGroup = new THREE.Group();
+            
+            if (cakeConfig.decoration === "sprinkles") {
+                // 添加糖粒
+                for (let i = 0; i < 666; i++) {
+                    const sprinkle = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.1, 0.1, 0.3, 3),
+                        new THREE.MeshPhongMaterial({ 
+                            color: new THREE.Color(`hsl(${Math.random() * 180}, 100%, 50%)`)
+                        })
+                    );
+                    
+                    sprinkle.rotation.x = Math.random() * Math.PI;
+                    sprinkle.rotation.z = Math.random() * Math.PI;
+                    // sprinkle.rotation.y = Math.random() * Math.PI;
+                    
+                    const angle = Math.random() * Math.PI * 3;
+                    const distance = radius * 0.8;
+                    sprinkle.position.set(
+                        Math.cos(angle) * distance,
+                        Math.random() * 0.5 + (cakeConfig.layers - 1) * 0.8 - cakeConfig.layers /1,
+                        Math.sin(angle) * distance
+                    );
+                    
+                    decorationGroup.add(sprinkle);
+                }
+            }
+            if (cakeConfig.decoration === "sprinkles") {
+                // 添加糖粒
+                for (let i = 0; i < 66; i++) {
+                    const sprinkle = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.1, 0.05, 0.3, 3),
+                        new THREE.MeshPhongMaterial({ 
+                            color: new THREE.Color(`hsl(${Math.random() * 360}, 50%, 10%)`)
+                        })
+                    );
+                    
+                    sprinkle.rotation.x = Math.random() * Math.PI;
+                    sprinkle.rotation.z = Math.random() * Math.PI;
+                    // sprinkle.rotation.y = Math.random() * Math.PI;
+                    
+                    const angle = Math.random() * Math.PI * 2;
+                    const distance = 5 * 0.8;
+                    sprinkle.position.set(
+                        Math.cos(angle) * distance,
+                        Math.random() * 0.5 + (cakeConfig.layers - 1) * 0.8 - cakeConfig.layers /2,
+                        Math.sin(angle) * distance
+                    );
+                    
+                    decorationGroup.add(sprinkle);
+                }
+            }
+             if (cakeConfig.decoration === "sprinkles") {
+                // 添加糖粒
+                for (let i = 0; i < 666; i++) {
+                    const sprinkle = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.1, 0.1, 0.3, 3),
+                        new THREE.MeshPhongMaterial({ 
+                            color: new THREE.Color(`hsl(${Math.random() * 380}, 100%, 50%)`)
+                        })
+                    );
+                    
+                    sprinkle.rotation.x = Math.random() * Math.PI;
+                    sprinkle.rotation.z = Math.random() * Math.PI;
+                    // sprinkle.rotation.y = Math.random() * Math.PI;
+                    
+                    const angle = Math.random() * Math.PI * 2;
+                    const distance = 4.2;
+                    sprinkle.position.set(
+                        Math.cos(angle) * distance,
+                        Math.random() * 0.5 + (cakeConfig.layers - 1) * 1.3 - cakeConfig.layers /1,
+                        Math.sin(angle) * distance
+                    );
+                    
+                    decorationGroup.add(sprinkle);
+                }
+            } if (cakeConfig.decoration === "sprinkles1") {
+                // 添加巧克力片
+                for (let i = 0; i < 30; i++) {
+                    const chocolate = new THREE.Mesh(
+                        new THREE.BoxGeometry(0.3, 0.1, 0.3),
+                        new THREE.MeshPhongMaterial({ color: 0x7B3F00 })
+                    );
+                    
+                    const angle = Math.random() * Math.PI * 2;
+                    const distance = radius * 0.9;
+                    chocolate.position.set(
+                        Math.cos(angle) * distance,
+                        Math.random() * cakeConfig.layers - cakeConfig.layers / 2,
+                        Math.sin(angle) * distance
+                    );
+                    
+                    chocolate.rotation.y = Math.random() * Math.PI;
+                    decorationGroup.add(chocolate);
+                }
+            }
+            
+            cake.add(decorationGroup);
+        }
+        
+        // 动画循环
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            if (cake) {
+                cake.rotation.y += 0.005;
+                // 让蜡烛火焰跳动
+                // console.log('cake.children',cake.children)
+                cake.children.forEach(child => {
+                    if (child.type === "Group" && child.children.length > 0) {
+                        const flame = child.children.find(c => c.geometry instanceof THREE.ConeGeometry);
+                        if (flame) {
+                            flame.scale.set(
+                                1 + Math.sin(Date.now() * 0.01) * 0.2,
+                                1 + Math.sin(Date.now() * 0.01 + 0.5) * 0.2,
+                                1
+                            );
+                        }
+                    }
+                });
+            }
+            
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        
+        // 设置事件监听器
+        function setupEventListeners() {
+            // 层数滑块
+            const layersSlider = document.getElementById('layers');
+            const layersValue = document.getElementById('layers-value');
+            
+            layersSlider.addEventListener('input', function() {
+                layersValue.textContent = this.value;
+                cakeConfig.layers = parseInt(this.value);
+            });
+            
+            // 颜色选择
+            const colorOptions = document.querySelectorAll('.color-option');
+            colorOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    colorOptions.forEach(opt => opt.classList.remove('selected'));
+                    this.classList.add('selected');
+                    cakeConfig.color = this.getAttribute('data-color');
+                });
+            });
+            
+            // 装饰选择
+            const decorationOptions = document.querySelectorAll('.decoration-option');
+            decorationOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    decorationOptions.forEach(opt => opt.classList.remove('decoration-selected'));
+                    this.classList.add('decoration-selected');
+                    cakeConfig.decoration = this.getAttribute('data-decoration');
+                });
+            });
+            
+            // 生成按钮
+            // document.getElementById('generate-btn').addEventListener('click', function() {
+            //     createCake();
+            // });
+        }
+        
+        // 更新蛋糕描述
+        function updateCakeDescription() {
+            const description = `${cakeConfig.layers}层${colorNames[cakeConfig.color]}蛋糕，配有${decorationNames[cakeConfig.decoration]}装饰`;
+            // document.getElementById('cake-description').textContent = description;
+        }
+        
+        // 窗口调整大小时调整渲染器
+        window.addEventListener('resize', function() {
+            const container = document.getElementById('cake-container');
+            camera.aspect = 2;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        });
+        
+        // 初始化应用
+        init();
+    </script>
+</body>
+</html>
