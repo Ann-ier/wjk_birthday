@@ -62,10 +62,68 @@
                 margin-top: 120px;
             }
         }
+        .dynamic-text {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 30px 0;
+            position: relative;
+            display: inline-block;
+        }
+        
+        .dynamic-text span {
+            display: inline-block;
+            position: relative;
+            animation: wave 2s ease-in-out infinite;
+            animation-delay: calc(0.1s * var(--i));
+            color: #0d38f7;
+            text-shadow: 
+                0 0 5px #fff,
+                0 0 10px #fff,
+                0 0 15px #228ff4,
+                0 0 20px #1461e6,
+                0 0 25px #0b56f7;
+        }
+        @keyframes wave {
+            0%, 100% { transform: translateX(0); }
+            50% { transform: translateX(-20px); }
+        }
+        
+
     </style>
 </head>
 <body>
     <div class="container">
+        <div style="position: absolute;top: 30px;left: 280px;display: flex;">
+            <div class="dynamic-text">
+                <span style="--i: 1;font-size: 35px;color: blue;">26</span>
+                <span style="--i: 2">岁</span>
+                <span style="--i: 3">生</span>
+                <span style="--i: 4">日</span>
+                <span style="--i: 5">快</span>
+                <span style="--i: 6">乐</span>
+            </div>
+            <div class="dynamic-text" style="margin-left: 20px;margin-top: 100px;">
+                <span style="--i: 2">平</span>
+                <span style="--i: 3">安</span>
+                <span style="--i: 4">顺</span>
+                <span style="--i: 5">遂</span>
+                <span style="--i: 6">！</span>
+            </div>
+            <!-- <div id="toggleAnimation"></div> -->
+        </div>
+        <img src="./img/005.png" alt="1"  style="position: absolute;top:35px;width: 30px;left:15px">
+        <img src="./img/001.png" alt="2"  style="position: absolute;top:225px;width: 30px;left:15px">
+        <img src="./img/005.png" alt="3"  style="position: absolute;top:325px;width: 30px;left:55px">
+        <img src="./img/001.png" alt="3"  style="position: absolute;top:335px;width: 30px;left:85px">
+        <img src="./img/002.png" alt="4"  style="position: absolute;top:345px;width: 50px;left:95px">
+        <img src="./img/003.png" alt="4"  style="position: absolute;top:225px;width: 30px;left:65px">
+        <img src="./img/005.png" alt="5"  style="position: absolute;top:525px;width: 55px;left:35px">
+        <img src="./img/001.png" alt="6"  style="position: absolute;top:625px;width: 30px;left:25px">
+        <img src="./img/003.png" alt="7"  style="position: absolute;top:425px;width: 30px;left:35px">
+        <img src="./img/001.png" alt="8"  style="position: absolute;top:635px;width: 30px;left:80px">
+        <img src="./img/002.png" alt="9"  style="position: absolute;top:645px;width: 50px;left:130px">
+        <img src="./img/005.png" alt="10"  style="position: absolute;top:675px;width: 30px;left:190px">
+        <img src="./img/001.png" alt="11"  style="position: absolute;top:655px;width: 50px;left:210px">
         <div id="cake-container"></div>
         
         <!-- <div class="controls">
@@ -138,9 +196,10 @@
             "berries": "浆果",
             "chocolate": "巧克力",
         };
+
         // 纹理缓存
         const textureCache = {};
-        
+    
         // 初始化场景
         function init() {
             // 创建场景
