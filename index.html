@@ -68,9 +68,11 @@
             margin: 30px 0;
             position: relative;
             display: inline-block;
+            display: flex;
+            flex-direction: column;
         }
         
-        .dynamic-text span {
+        .dynamic-text div {
             display: inline-block;
             position: relative;
             animation: wave 2s ease-in-out infinite;
@@ -95,19 +97,19 @@
     <div class="container">
         <div style="position: absolute;top: 30px;left: 280px;display: flex;">
             <div class="dynamic-text">
-                <span style="--i: 1;font-size: 35px;color: blue;">26</span>
-                <span style="--i: 2">岁</span>
-                <span style="--i: 3">生</span>
-                <span style="--i: 4">日</span>
-                <span style="--i: 5">快</span>
-                <span style="--i: 6">乐</span>
+                <div style="--i: 1;font-size: 35px;color: blue;">26</div>
+                <div style="--i: 2">岁</div>
+                <div style="--i: 3">生</div>
+                <div style="--i: 4">日</div>
+                <div style="--i: 5">快</div>
+                <div style="--i: 6">乐</div>
             </div>
             <div class="dynamic-text" style="margin-left: 20px;margin-top: 100px;">
-                <span style="--i: 2">平</span>
-                <span style="--i: 3">安</span>
-                <span style="--i: 4">顺</span>
-                <span style="--i: 5">遂</span>
-                <span style="--i: 6">！</span>
+                <div style="--i: 2">平</div>
+                <div style="--i: 3">安</div>
+                <div style="--i: 4">顺</div>
+                <div style="--i: 5">遂</div>
+                <div style="--i: 6">！</div>
             </div>
             <!-- <div id="toggleAnimation"></div> -->
         </div>
@@ -126,31 +128,7 @@
         <img src="./img/001.png" alt="11"  style="position: absolute;top:655px;width: 50px;left:210px">
         <div id="cake-container"></div>
         
-        <!-- <div class="controls">
-            <div class="control-group">
-                <h2>蛋糕定制</h2>
-                <label for="layers">蛋糕层数: <span id="layers-value">3</span></label>
-                <input type="range" id="layers" min="1" max="5" value="3">
-                
-                <label>蛋糕颜色:</label>
-                <div class="color-picker">
-                    <div class="color-option selected" style="background-color: #FFB6C1;" data-color="#FFB6C1"></div>
-                    <div class="color-option" style="background-color: #87CEFA;" data-color="#87CEFA"></div>
-                    <div class="color-option" style="background-color: #98FB98;" data-color="#98FB98"></div>
-                    <div class="color-option" style="background-color: #FFD700;" data-color="#FFD700"></div>
-                    <div class="color-option" style="background-color: #DDA0DD;" data-color="#DDA0DD"></div>
-                </div>
-                
-                <label>装饰选项:</label>
-                <div class="decorations">
-                    <div class="decoration-option decoration-selected" data-decoration="sprinkles">糖粒</div>
-                    <div class="decoration-option" data-decoration="berries">浆果</div>
-                    <div class="decoration-option" data-decoration="chocolate">巧克力</div>
-                </div>
-                
-                <button id="generate-btn">生成蛋糕</button>
-            </div>
-        </div> -->
+    
     </div>
 
     <script>
